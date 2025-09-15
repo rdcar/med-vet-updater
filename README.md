@@ -1,16 +1,14 @@
 -----
 
-## 📄 README.md
+#🩺Pesquisa e Tradução de Artigos no PubMed
 
 -----
-
-### Pesquisa e Tradução de Artigos no PubMed 🩺
 
 Este script Python automatiza a busca, análise e tradução de artigos científicos do **PubMed** e **Google Gemini**. Ele encontra os artigos mais citados sobre tópicos específicos, traduz seus resumos para o português e salva os resultados em um arquivo PDF. É uma ferramenta útil para pesquisadores ou estudantes que precisam fazer uma revisão bibliográfica rápida em sua área de interesse.
 
 -----
 
-### Como Funciona o Script ⚙️
+## Como Funciona o Script ⚙️
 
 O script executa um processo de cinco etapas para entregar os resultados:
 
@@ -22,7 +20,7 @@ O script executa um processo de cinco etapas para entregar os resultados:
 
 -----
 
-### Como Usar o Script 🚀
+## Como Usar o Script 🚀
 
 Para usar o script, siga estes passos simples:
 
