@@ -20,7 +20,7 @@ Para usar o script, siga estes passos simples:
 
 1.  **Instale as dependências:** Você precisa ter o Python instalado. Execute o seguinte comando para instalar as bibliotecas necessárias:
     ```bash
-    pip install requests python-dotenv google-generativeai reportlab
+    pip install -r requirements.txt
     ```
 2.  **Configure a API:** O script requer uma chave de API do Google Gemini.
       * Crie uma conta na plataforma **Google AI Studio** para obter sua chave.
