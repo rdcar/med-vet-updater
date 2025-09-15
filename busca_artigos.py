@@ -4,19 +4,19 @@ from dotenv import load_dotenv
 import os
 import random
 from datetime import datetime
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
+import google.generativeai as genai
 
 # ----------------- ETAPA 1: BUSCA NO PUBMED -----------------
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Calcular intervalo de datas (últimos 5 anos até hoje)
-today = datetime.today()
-three_years_ago = today.replace(year=today.year - 5)
-date_filter = f"{three_years_ago.strftime('%Y/%m/%d')}:{today.strftime('%Y/%m/%d')}"
-
 # Termos de busca no PubMed
-search_terms = f"(dog OR cat) AND (systematic review[Publication Type] OR meta-analysis[Publication Type] OR randomized controlled trial[Publication Type]) AND ({date_filter}[dp])"
+search_terms = f"(dog OR cat OR canine OR feline) AND (clinicaltrial[Filter] OR meta-analysis[Filter] OR randomizedcontrolledtrial[Filter] OR systematicreview[Filter]) AND (y_5[Filter]))"
 
 # API do PubMed - Endpoint para busca de IDs (e-search)
 search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -38,33 +38,13 @@ print(f"IDs encontrados: {len(article_ids)} artigos")
 if not article_ids:
     raise ValueError("Nenhum artigo encontrado com os critérios de busca.")
 
-# ----------------- ETAPA 2: CONTAR CITAÇÕES -----------------
+# ----------------- ETAPA 2: SELEÇÃO ALEATÓRIA DE ARTIGOS -----------------
 
-elink_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi"
-citations_dict = {}
+print("\nSelecionando 5 artigos aleatoriamente...")
+# Selecionar aleatoriamente 5 artigos da lista total de IDs encontrados
+selected_pmids = random.sample(article_ids, min(5, len(article_ids)))
 
-print("\nContando citações dos artigos...")
-
-for pmid in article_ids:
-    params_elink = {
-        'dbfrom': 'pubmed',
-        'id': pmid,
-        'linkname': 'pubmed_pubmed_citedin',
-        'retmode': 'xml'
-    }
-    r = requests.get(elink_url, params=params_elink)
-    root = ET.fromstring(r.content)
-    citations = len(root.findall('.//Link'))
-    citations_dict[pmid] = citations
-
-# Ordenar artigos pelos mais citados
-sorted_articles = sorted(citations_dict.items(), key=lambda x: x[1], reverse=True)
-
-# Selecionar aleatoriamente 5 artigos entre os 20 mais citados
-top_cited = sorted_articles[:20] if len(sorted_articles) >= 20 else sorted_articles
-selected_pmids = random.sample([pmid for pmid, _ in top_cited], min(5, len(top_cited)))
-
-print(f"Artigos escolhidos aleatoriamente entre os mais citados: {selected_pmids}")
+print(f"Artigos escolhidos aleatoriamente: {selected_pmids}")
 
 # ----------------- ETAPA 3: PEGAR DETALHES DOS ARTIGOS -----------------
 
@@ -99,14 +79,11 @@ for article in root.findall('.//PubmedArticle'):
         'keywords': keywords,
         'url': article_url,
         'pmid': pmid,
-        'citations': citations_dict.get(pmid, 0)
     })
 
 print("Detalhes dos artigos extraídos com sucesso.")
 
 # ----------------- ETAPA 4: TRADUÇÃO COM GEMINI -----------------
-
-import google.generativeai as genai
 
 # Configurar a chave da API do Gemini
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -116,7 +93,7 @@ if not GOOGLE_API_KEY:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Inicializar o modelo
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 
 def process_article_with_gemini(article_data):
@@ -172,12 +149,6 @@ print("Traduções concluídas.")
 
 # ----------------- ETAPA 5: GERAR PDF -----------------
 
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
-
-
 def create_pdf(filename, articles_data):
     """
     Cria um arquivo PDF com os artigos traduzidos.
@@ -195,7 +166,6 @@ def create_pdf(filename, articles_data):
         elements.append(Spacer(1, 0.1 * inch))
 
         elements.append(Paragraph(f"<b>PMID:</b> {article['pmid']}", styles['BodyText']))
-        elements.append(Paragraph(f"<b>Citações:</b> {article['citations']}", styles['BodyText']))
         elements.append(Paragraph(f"<b>URL:</b> <a href='{article['url']}'>{article['url']}</a>", styles['BodyText']))
         elements.append(Spacer(1, 0.1 * inch))
 
